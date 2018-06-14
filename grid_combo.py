@@ -74,7 +74,7 @@ def unique_shapes(shape):
     return new_shape_list
 
 def gen_world(x, y):
-    l = [ ['.' for i in range(y)] for j in range(x)]
+    l = [ ['  ' for i in range(y)] for j in range(x)]
     return l 
 
 
@@ -91,16 +91,20 @@ def display_shapes(shape, offset=False):
             x1 = shape[i][t][0] + grid_offset
             y1 = shape[i][t][1] + grid_offset
             
-            world[x1][y1] = 'X'
+            world[x1][y1] = '[]'
         for t in range(len(world)):
-            print(world[t])
+            row = ""
+            for r in range(len(world[t])):
+                row += world[t][r]
+            print(row)
         print('\n')
         
 
 results = []
 shapes = []
-for i in range(9, 10):
-    shapes = unique_shapes(gen_shapes(i))
+for i in range(1, 6):
+    shapes.append(unique_shapes(gen_shapes(i)))
     results.append(len(shapes))
 
-#display_shapes(unique_shapes(gen_shapes(4)))
+for i in range(len(shapes)):
+    display_shapes(shapes[i])
