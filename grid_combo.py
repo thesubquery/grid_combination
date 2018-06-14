@@ -74,7 +74,7 @@ def unique_shapes(shape):
     return new_shape_list
 
 def gen_world(x, y):
-    l = [ ['  ' for i in range(y)] for j in range(x)]
+    l = [ ['   ' for i in range(y)] for j in range(x)]
     return l 
 
 
@@ -98,13 +98,43 @@ def display_shapes(shape, offset=False):
                 row += world[t][r]
             print(row)
         print('\n')
-        
-
+         
+def write_to_file(shape, filename= "test.txt", offset=False):
+    with open(filename, "a") as f:
+        f.write("***********************")
+        f.write("\n")
+        f.write("******Shape :**********")
+        f.write("\n")
+        f.write("***********************")
+        f.write("\n")
+        world_offset = len(shape[0])
+        grid_offset = 0
+        if offset:
+            grid_offset = world_offset
+            world_offset *= 2
+        for i in range(len(shape)):
+            world = gen_world(world_offset, world_offset)
+            for t in range(len(shape[i])):
+                
+                x1 = shape[i][t][0] + grid_offset
+                y1 = shape[i][t][1] + grid_offset
+                
+                world[x1][y1] = '[]'
+            for t in range(len(world)):
+                row = ""
+                for r in range(len(world[t])):
+                    row += world[t][r]
+                f.write(row) #print(row)
+                f.write("\n")
+            f.write("\n") #print('\n')
+        f.write("***********************")
+        f.write("\n")
 results = []
 shapes = []
-for i in range(1, 6):
+for i in range(1, 9):
     shapes.append(unique_shapes(gen_shapes(i)))
-    results.append(len(shapes))
+    results.append(len(shapes[i-1]))
 
-for i in range(len(shapes)):
-    display_shapes(shapes[i])
+#for i in range(len(shapes)):
+#    display_shapes(shapes[i])
+#    
