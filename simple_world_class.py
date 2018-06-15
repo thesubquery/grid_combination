@@ -1,6 +1,5 @@
-
 from random import randint, shuffle
-from math import floor
+
 class World:
     """
     A testing World class to handle :
@@ -44,7 +43,7 @@ class World:
     def checkAvailability(self, r, c):
         """
         Check if the given cell is avaliable
-        
+
         Arguments:
             r {int} -- [row]
             c {int} -- [col]
@@ -95,9 +94,9 @@ class World:
         Keyword Arguments:
             place_holder {string} -- You can put it as '[]' or '[x]'' (default: {None})
         """
-        
+
         digits = len(str(self.area))
-        
+
         if place_holder != None:
             self.grid[r][c] = place_holder
         else:
@@ -154,7 +153,7 @@ def gen_shapes(n):
         1 : [ +1,  0 ], #down
         2 : [  0, -1 ], #left
         3 : [  0, +1 ] #right
-    }    
+    }
     init = [[[0, 0]]]
     for step in range(n-1):
         new_list = []
