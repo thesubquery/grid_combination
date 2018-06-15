@@ -198,3 +198,5 @@ w = World(100, 10)
 w.addShapes(new_shapes)
 w.fillGrid()
 w.display()
+
+#Add this line
