@@ -33,14 +33,24 @@ class World:
         self.emptyCell = self.col * self.row
         self.counter = 1
 
-    def display(self, heatmap = False, cmap = "YlGnBu"):
+    def display(self, heatmap = False, cmap = None):
         """ (bool, string ) -> null
         Print out the grid
         
         """
+        """
+        Set color platters 
+        https://seaborn.pydata.org/tutorial/color_palettes.html
+        https://seaborn.pydata.org/generated/seaborn.cubehelix_palette.html
+        -Daisy : I tried.............. 
+        """
+        
         if heatmap == True:
             #convert the blocks into integer first
             data = [ [int(c) for c in w.grid[r]] for r in range(w.row) ] 
+            num_of_block = max(max(data))
+            if cmap == None:
+                cmap = sns.cubehelix_palette(num_of_block, hue=1, rot=0.5, light=0.9, dark=0, as_cmap=True)
             arr_data = np.array(data) #convert it into array
             sns.heatmap(arr_data, 
                              linewidths=.5, 
@@ -212,14 +222,7 @@ w = World(10, 10)
 w.random = True
 w.addShapes(new_shapes)
 w.fillGrid()
-"""
-Set color platters 
-https://seaborn.pydata.org/tutorial/color_palettes.html
-https://seaborn.pydata.org/generated/seaborn.cubehelix_palette.html
--Daisy : I tried.............. 
-"""
-cmap = sns.cubehelix_palette(50, hue=1, rot=0.5, light=0.9, dark=0, as_cmap=True)
-w.display(heatmap=True, cmap = cmap)
+w.display(heatmap=True)
 
 """
 Normal Test Case / Original
