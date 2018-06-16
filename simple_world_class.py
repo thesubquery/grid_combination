@@ -1,5 +1,8 @@
 from random import randint, shuffle
-
+import copy
+import seaborn as sns 
+import matplotlib.pyplot as plt
+import numpy as np 
 class World:
     """
     A testing World class to handle :
@@ -17,6 +20,7 @@ class World:
         self.shapes = []
         self.area = self.row * self.col
         self.setEmptyGrid()
+        self.random = False
 
 
     def setEmptyGrid(self):
@@ -29,16 +33,27 @@ class World:
         self.emptyCell = self.col * self.row
         self.counter = 1
 
-    def display(self):
-        """
+    def display(self, heatmap = False, cmap = "YlGnBu"):
+        """ (bool, string ) -> null
         Print out the grid
-
+        
         """
-        for r in range(self.row):
-            new_string = ""
-            for s in range(len(self.grid[r])):
-                new_string += self.grid[r][s] + "  "
-            print(new_string + "\n")
+        if heatmap == True:
+            #convert the blocks into integer first
+            data = [ [int(c) for c in w.grid[r]] for r in range(w.row) ] 
+            arr_data = np.array(data) #convert it into array
+            sns.heatmap(arr_data, 
+                             linewidths=.5, 
+                             annot=True , 
+                             square= True, 
+                             cmap=cmap)
+            plt.show()
+        else:
+            for r in range(self.row):
+                new_string = ""
+                for s in range(len(self.grid[r])):
+                    new_string += self.grid[r][s] + "  "
+                print(new_string + "\n")
 
     def checkAvailability(self, r, c):
         """
@@ -56,7 +71,7 @@ class World:
         else:
             return self.grid[r][c] == "."
 
-    def getNextAvailability(self, random = False):
+    def getNextAvailability(self):
         """
         Return the next available cell
 
@@ -74,7 +89,7 @@ class World:
 #                if self.checkAvailability(r, c):
 #                    list_ava.append([c, r])
         list_ava = [ [c, r] for r in range(self.row) for c in range(self.col) if self.grid[r][c] == "."]
-        if random == True:
+        if self.random == True:
             num = randint(0, len(list_ava)-1)
         else:
             num = 0
@@ -147,6 +162,7 @@ class World:
                     # if not all the cells are available, get the next shape
                     s +=1
 
+
 def gen_shapes(n):
     directions = {
         0 : [ -1,  0 ], #up
@@ -177,27 +193,39 @@ def gen_shapes(n):
 """
 Sample test case:
 """
-
-shapes = [
-    #1
-    [[0, 0]],
-    #2
-    [[0, 0], [1, 0]],
-    [[0, 0], [-1, 0]],
-    [[-1, 0], [0, 0]],
-    [[1, 0], [0, 0]]
-]
-
-
+#shapes = [
+#    #1
+#    [[0, 0]],
+#    #2
+#    [[0, 0], [1, 0]],
+#    [[0, 0], [-1, 0]],
+#    [[-1, 0], [0, 0]],
+#    [[1, 0], [0, 0]]
+#]
 new_shapes = []
 for i in range(1, 7):
     new_shapes = new_shapes + gen_shapes(i)
+"""
+If you want to get a better graphic on the heatmap, set the following
+"""
+w = World(10, 10)
+w.random = True
+w.addShapes(new_shapes)
+w.fillGrid()
+"""
+Set color platters 
+https://seaborn.pydata.org/tutorial/color_palettes.html
+https://seaborn.pydata.org/generated/seaborn.cubehelix_palette.html
+-Daisy : I tried.............. 
+"""
+cmap = sns.cubehelix_palette(50, hue=1, rot=0.5, light=0.9, dark=0, as_cmap=True)
+w.display(heatmap=True, cmap = cmap)
 
+"""
+Normal Test Case / Original
 
-w = World(100, 10)
+w = World(10, 10)
 w.addShapes(new_shapes)
 w.fillGrid()
 w.display()
-
-#Add this line
-#This is my space
+"""
