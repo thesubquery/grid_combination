@@ -4,7 +4,10 @@ Created on Mon Feb  4 10:18:40 2019
 
 @author: CLAM
 """
+
 import gc
+import os
+import datetime as dt
 gc.collect()
 
 
@@ -14,8 +17,8 @@ class SHAPE:
         self.ID                 = ID
         self.coordinates        = (0, 0)
         self.cells              = set()
-        self.neighboring_cells  = {}
-        self.neighboring_shapes = {}
+        self.neighboring_cells  = set()
+        self.neighboring_shapes = set()
     def __repr__(self):
         msg  = "ID:{} Coordinate(s): ".format(self.ID)
         for c in self.coordinates:
@@ -27,57 +30,272 @@ class CELL:
         self.ID                 = ID
         self.coordinates        = (0, 0)
         self.shapes             = set()
-        self.neighboring_cells  = {}
-        self.neighboring_shapes = {}
+        self.neighboring_cells  = set()
+        self.neighboring_shapes = set()
     def __repr__(self):
         msg = "ID[{}] Coordinate: ({}, {})".format(self.ID, self.coordinates[0], self.coordinates[1])
         return msg
 
-def gen_shape(size):
-    world = [['.' for j in range(size)] for i in range(size)]
-    data = {}
-    for i in range(1, size + 1):
-        for j in range(1, size + 1):
-            if i * j == size:
-                data[(i, j)] = {}
-#                print(i, j)
-                for k in range(i):
-                    for l in range(j):
-                        data[(i, j)][(k, l)] = None
-#                        print("\t{}, {}".format(k, l))
-    return data
+class BOARD:
+    def __init__(self, filepath):
+        self.filepath  = filepath
+        self.height    = None
+        self.width     = None
+        self.t_minimum = None
+        self.m_minimum = None
+        self.min_slice = None
+        self.max_slice = None
+        self.shape_dim = None
+        self.board     = None
 
-def printProgressBar(iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
-    percent      = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar          = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
-    # Print New Line on Complete
-    if iteration == total: 
-        print()    
+        self.slice_by_coord = {}
+        self.slice_by_index = {}
+        self.cells_by_coord = {}
+        self.cells_by_index = {}
+    
+    def __repr__(self):
+        msg  = "Pizza Size: {} by {}\n".format(self.height, self.width)
+        msg += "Minimum {} Tomates and Mushrooms per Slice\n".format(self.t_minimum)
+        msg += "Slice: Min [{}] Max [{}]\n".format(self.min_slice, self.max_slice)
+        
+        msg += "Slice Dimensions:\n"
+        for size in self.shape_dim:
+            msg += "  Size: {}\n".format(size)
+            for dim in self.shape_dim[size]:
+                msg += "    Dimensions: {}\n".format(dim)
+#                msg += "      Coordinates:\n".format(dim)
+#                for coord in self.shape_dim[size][dim]:
+#                    msg += "      {}\n".format(coord)
+                    
+        return msg
+    
+    def load_file(self, file):
+        
+        function_start = dt.datetime.now()
+        print("START OF load_files(): {}\n".format(function_start))
+
+        # Read in files
+        mod_start = dt.datetime.now()
+        print("{}: Read in files".format(mod_start))
+        lines = []
+        with open(self.filepath + '\\' + file, "r") as f:
+            lines = f.readlines()        
+        lines = [ l.replace("\n", "") for l in lines]
+        headings = lines[0].split(" ")
+        headings = [int(h) for h in headings]
+        self.height    = headings[0]
+        self.width     = headings[1]
+        self.t_minimum = headings[2]
+        self.m_minimum = headings[2]
+        self.min_slice = headings[2] * 2
+        self.max_slice = headings[3]
+        self.shape_dim = self.gen_shape(self.min_slice, self.max_slice)
+        self.board     = [[lines[i][j] for j in range(self.width)] for i in range(1, self.height + 1)]
+        self.board2    = [[lines[i][j] for j in range(self.width)] for i in range(1, self.height + 1)]
+        print("{}: Completed\n".format(dt.datetime.now() - mod_start))
+        
+
+        # Create CELL nodes and references
+        mod_start = dt.datetime.now()
+        print("{}: Create CELL nodes and references".format(mod_start))      
+        num = 1
+        for i in range(self.height):
+            for j in range(self.width):
+                cell                     = CELL(num)
+                cell.coordinates         = (i, j)
+                self.cells_by_index[num] = cell
+                self.board2[i][j]        = cell
+                num                     += 1
+        print("{}: Completed\n".format(dt.datetime.now() - mod_start))
         
         
+        # Generate unique list of shapes
+        mod_start = dt.datetime.now()
+        print("{}: Generate unique list of shapes".format(mod_start))          
+        total = self.height * self.width
+        self.list_of_shapes = set()
+        for x1 in range(self.height):
+            for y1 in range(self.width):
+                for size in self.shape_dim:
+                    for dim in self.shape_dim[size]:
+                        
+                        counter = {'T': 0, 'M': 0}
+                        coords  = []
+                        for piece in self.shape_dim[size][dim]:
+                            x2 = piece[0]
+                            y2 = piece[1]
+                            x3 = x1 + x2
+                            y3 = y1 + y2
+                            if 0 <= x3 < self.height and 0 <= y3 < self.width:
+                                counter[self.board[x3][y3]] += 1
+                                coords.append((x3, y3))
+                            else:
+                                break
+                        # Valid slice
+                        if counter['T'] >= self.t_minimum and counter['M'] >= self.m_minimum and (counter['T'] + counter['M'] == size):
+                            coords.sort()
+                            self.list_of_shapes.add(tuple(coords))
+            self.printProgressBar(self.board2[x1][y1].ID, total, length=50)
+        print("{}: Completed".format(dt.datetime.now() - mod_start))
         
-lines = []
-with open(r"C:\Users\clam\Desktop\HashCode_Pizza\grid_combination\Google Hash Code\d_big.in", "r") as f:
-    lines = f.readlines()        
-lines = [ l.replace("\n", "") for l in lines]
+        # Link cells to neighbor cells
+        mod_start = dt.datetime.now()
+        print("{}: Link cells to neighbor cells".format(mod_start))         
+        for x1 in range(self.height):
+            for y1 in range(self.width):
+                directions = [[-1,  0],
+                              [ 1,  0],
+                              [ 0,  1],
+                              [ 0, -1],
+                              [ 1,  1],
+                              [ 1, -1],
+                              [-1,  1],
+                              [-1, -1]]
+                for d in directions:
+                    x2 = x1 + d[0]
+                    y2 = y1 + d[1]
+                    if 0 <= x2 < self.height and 0 <= y2 < self.width and not (x1 == x2 and y1 == y2):
+                        neighbor = self.board2[x2][y2]
+                        self.board2[x1][y1].neighboring_cells.add(neighbor)
+        print("{}: Completed\n".format(dt.datetime.now() - mod_start))
+                
+        # Create a unique index number and link it to a shape node
+        mod_start = dt.datetime.now()
+        print("{}: Create a unique index number and link it to a shape node\n".format(mod_start))          
+        iteration = 1
+        total     = len(self.list_of_shapes)
+        for s in self.list_of_shapes:    
+            shape                          = SHAPE(iteration)
+            shape.coordinates              = [each for each in s]
+            self.slice_by_index[iteration] = shape
+            
+            for c in shape.coordinates:
+                cell                       = self.board2[c[0]][c[1]]
+                shape.cells.add(cell)
+                cell.shapes.add(shape)
+        
+            for cell in shape.cells:
+                for n_cell in cell.neighboring_cells:
+                    shape.neighboring_cells.add(n_cell)
+            iteration += 1
+            msg  = "{} / {}\t{}".format(iteration, total, dt.datetime.now() - mod_start)        
+            self.printProgressBar(iteration, total, suffix = msg, length=50)
+            
+        print("\n{}: Completed\n".format(dt.datetime.now() - mod_start))
 
-headings = lines[0].split(" ")
-headings = [int(h) for h in headings]
+        # Link shapes to cells
+        # Link shapes to neighboring shapes
+        mod_start = dt.datetime.now()
+        print("{}: Link shapes to neighboring shapes\n".format(mod_start))              
+        size      = len(self.slice_by_index)
+        total     = len(self.slice_by_index) + 1
+        for i in range(1, size):
+            
+            shape      = self.slice_by_index[i]
+            # Shapes that overlap the cells
+            remove_IDs = set(shape for cell in shape.cells for shape in cell.shapes)
+            # Shapes that overlap neighboring cells
+            keep_IDs   = set(shape for n_cell in shape.neighboring_cells for shape in n_cell.shapes)
+            # Get neighboring shapes that don't overlap with existing cells
+            keep_IDs   = set(keep_IDs) - set(remove_IDs)
+            
+            for each in keep_IDs:
+                shape.neighboring_shapes.add(each)
+            
+            msg  = "{} / {}\t{}".format(i, total, dt.datetime.now() - mod_start)        
+            self.printProgressBar(i, total, suffix = msg, length=50)
+            
+        time = dt.datetime.now() - mod_start
+        print("\n{}: Completed\n".format(time.total_seconds() / 60))
+        
+        print(self)
+        
+    def gen_shape(self, min_slice, max_slice):
+        
+        data = {}
+        
+        for size in range(min_slice, max_slice+1):
+            data[size] = {}
+            for i in range(1, size + 1):
+                for j in range(1, size + 1):
+                    if i * j == size:
+                        data[size][(i, j)] = {}
+                        for k in range(i):
+                            for l in range(j):
+                                data[size][(i, j)][(k, l)] = None
+        return data
+
+    def printProgressBar(self, iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+        percent      = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar          = fill * filledLength + '-' * (length - filledLength)
+        print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+        # Print New Line on Complete
+        if iteration == total: 
+            print()
+
+    def run_diagnostics(self):
+        # Diagnostics
+        
+        # Check cell count
+        if len(self.cells_by_index) == self.width * self.height:
+            print(True)
+        
+        # Check neighboring cells
+        size = self.width * self.height
+        for i in range(1, size + 1):
+            cell = self.cells_by_index[i]
+            x1   = cell.coordinates[0]
+            y1   = cell.coordinates[1]
+            for n in cell.neighboring_cells:
+                coord = n.coordinates
+                x2    = coord[0]
+                y2    = coord[1]
+                if x1 == x2 and y1 == y2:
+                    print(True)
+                    break
+        
+        # Check if all shape coordinates are linked to the right cells
+        for i in range(1, len(self.slice_by_index) + 1):
+            shape = self.slice_by_index[i]
+            coord = list(shape.coordinates)
+            cells = [cell.coordinates for cell in shape.cells]
+            for row in coord:
+                x1 = row[0]
+                y1 = row[1]
+                if (x1, y1) not in cells:
+                    print(True)
+                    break
+            for row in cells:
+                x1 = row[0]
+                y1 = row[1]
+                if (x1, y1) not in coord:
+                    print(True)
+                    break
+                
+    def get_cell_by_id(self, x, y):
+        return self.board2[x][y]
+    
+    
+    
+filepath = r"C:\Users\lam\Git Repos\grid_combination\Google Hash Code"
+file     = "c_medium.in"
+pizza    = BOARD(filepath)
+pizza.load_file(file)
 
 
-height    = headings[0]
-width     = headings[1]
-t_minimum = headings[2]
-m_minimum = headings[2]
-min_slice = headings[2] * 2
-max_slice = headings[3]
-
-pizza     = [[lines[i][j] for j in range(width)] for i in range(1, height + 1)]
-world     = [[lines[i][j] for j in range(width)] for i in range(1, height + 1)]
+# Get cell ID
+pizza.get_cell_by_id(0, 0)
 
 
+
+
+
+
+
+
+
+data = pizza.shape_dim
 slice_by_coord = {}
 slice_by_index = {}
 cells_by_coord = {}
@@ -262,7 +480,19 @@ def n_shapes1(size):
         # Shapes that overlap the cells
         remove_IDs               = {key: None for index in cell_ids for key in cells_by_index[index].shapes}
         
-
+    # Neighboring cells
+    n_cell_ids               = {key: None for key in shape.neighboring_cells}
+    # Shapes that overlap neighboring cells
+    keep_IDs                 = {key: None for index in n_cell_ids for key in shape.neighboring_cells[index].shapes}
+    # Get neighboring shapes that don't overlap with existing cells
+    shape.neighboring_shapes = {key: None for key in keep_IDs if key not in remove_IDs}
+    
+    
+#    neighbors[i]             = shape.neighboring_shapes
+    if i % (len(slice_by_index) // 5 - 1) == 0:
+        time = dt.datetime.now() - starttime
+        msg  = "{} / {}\t{}".format(i, total, time.total_seconds() / 60)        
+        printProgressBar(i, total, suffix = msg)
 #neighbors = {}
 def n_shapes2(size):
     import datetime as dt
