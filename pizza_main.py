@@ -9,7 +9,8 @@ import gc
 import os
 import datetime as dt
 gc.collect()
-
+import numpy as np
+os.chdir(r'C:\Users\clam\Desktop\HashCode_Pizza\grid_combination')
 
 
 class SHAPE:
@@ -184,28 +185,28 @@ class BOARD:
         print("\n{}: Completed\n".format(dt.datetime.now() - mod_start))
 
         # Link shapes to neighboring shapes
-        mod_start = dt.datetime.now()
-        print("{}: Link shapes to neighboring shapes\n".format(mod_start))              
-        size      = len(self.slice_by_index)
-        total     = len(self.slice_by_index) + 1
-        for i in range(1, size):
-            
-            shape      = self.slice_by_index[i]
-            # Shapes that overlap the cells
-            remove_IDs = set(shape for cell in shape.cells for shape in cell.shapes)
-            # Shapes that overlap neighboring cells
-            keep_IDs   = set(shape for n_cell in shape.neighboring_cells for shape in n_cell.shapes)
-            # Get neighboring shapes that don't overlap with existing cells
-            keep_IDs   = set(keep_IDs) - set(remove_IDs)
-            
-            for each in keep_IDs:
-                shape.neighboring_shapes.add(each)
-            
-            msg  = "{} / {}\t{}".format(i, total, dt.datetime.now() - mod_start)        
-            self.printProgressBar(i, total, suffix = msg, length=50)
-            
-        time = dt.datetime.now() - mod_start
-        print("\n{}: Completed\n".format(time.total_seconds() / 60))
+#        mod_start = dt.datetime.now()
+#        print("{}: Link shapes to neighboring shapes\n".format(mod_start))              
+#        size      = len(self.slice_by_index)
+#        total     = len(self.slice_by_index) + 1
+#        for i in range(1, size):
+#            
+#            shape      = self.slice_by_index[i]
+#            # Shapes that overlap the cells
+#            remove_IDs = set(shape for cell in shape.cells for shape in cell.shapes)
+#            # Shapes that overlap neighboring cells
+#            keep_IDs   = set(shape for n_cell in shape.neighboring_cells for shape in n_cell.shapes)
+#            # Get neighboring shapes that don't overlap with existing cells
+#            keep_IDs   = set(keep_IDs) - set(remove_IDs)
+#            
+#            for each in keep_IDs:
+#                shape.neighboring_shapes.add(each)
+#            
+#            msg  = "{} / {}\t{}".format(i, total, dt.datetime.now() - mod_start)        
+#            self.printProgressBar(i, total, suffix = msg, length=50)
+#            
+#        time = dt.datetime.now() - mod_start
+#        print("\n{}: Completed\n".format(time.total_seconds() / 60))
         
         print(self)
         
@@ -277,54 +278,249 @@ class BOARD:
     def get_cell_by_id(self, x, y):
         return self.board2[x][y]
     
+def save_map(board, visited, shape, filename):
+    
+    file = 'data.txt'
+    
+    world = [['X' if (x, y) in visited else board.board[x][y] for y in range(board.width)] for x in range(board.height)]
+    for each in shape.coordinates:
+        world[each[0]][each[1]] = '*'
+    
+    with open(file, 'a+') as f:
+        f.write(filename + '\n')
+        for each in world:
+            msg = "".join(each)
+            f.write(msg + "\n")
+        f.write('\n\n')
+            
+def find_islands(visited, shape, max_x, max_y):
+    visited = {each: None for each in visited}
+    
+    coords  = shape.coordinates
+    for c in coords:
+        visited[c] = None
+        
+        
+#    world   = [['X' if (x, y) in visited else '*' for y in range(max_y+1)] for x in range(max_x+1)]
+    queue   = [[x, y] for x in range(max_x+1) for y in range(max_y+1) if (x, y) not in visited]
+    SCC     = {}
+#    len(SCC) len(queue)
+    if queue:
+        queue   = [queue[0]]
+        island  = []        
+        while queue:
+            coord = queue.pop(0)
+            if tuple(coord) not in visited and tuple(coord) not in SCC:
+#                print(True)
+                SCC[tuple(coord)] = None
+                x = coord[0]
+                y = coord[1]
+                neighbors = pizza.get_cell_by_id(x, y).neighboring_cells
+    
+                # Check if at least one neighbor is not in visited
+                proceed = False
+                for n_cell in neighbors:
+                    n_coords = n_cell.coordinates
+                    x2 = n_coords[0]
+                    y2 = n_coords[1]    
+                    if x2 <= max_x and y2 <= max_y:
+                        queue.append([x2, y2])
+    if len(SCC) == len([[1, [[x, y]]] for x in range(max_x+1) for y in range(max_y+1) if (x, y) not in visited]):
+        return False
+    else:
+        return True
+
+
+
+
     
     
-filepath = r"C:\Users\lam\Git Repos\grid_combination\Google Hash Code"
+filepath = r"C:\Users\clam\Desktop\HashCode_Pizza\grid_combination\Google Hash Code"
 file     = "c_medium.in"
 pizza    = BOARD(filepath)
 pizza.load_file(file)
 
 
-# Get cell ID
-pizza.get_cell_by_id(0, 0)
 
 
 
+size = pizza.height * pizza.width
 
-gc.collect()
+cell_sol_count = {}
+for i in range(1, size + 1):
+    cell = pizza.cells_by_index[i]
+    count = len(cell.shapes)
+    if count not in cell_sol_count:
+        cell_sol_count[count] = []
+    cell_sol_count[count].append(i)
+
+    
+cell_sol_count[min(list(cell_sol_count.keys()))]
+
 visited        = {}
-list_of_shapes = {}
-queue          = [pizza.cells_by_index[i].coordinates for i in pizza.cells_by_index]
+queue          = [pizza.cells_by_index[i].coordinates for i in cell_sol_count[min(list(cell_sol_count.keys()))]] + [pizza.cells_by_index[i].coordinates for i in pizza.cells_by_index]
 total          = len(queue)
 islands        = []
-while queue:
+run            = True
+coord_history  = []
+restricted     = {}
+iteration      = 1
+gc.collect()
+starttime = dt.datetime.now()
+print("START RUN()")
+while queue and run:
+
+
     coord  = queue.pop(0)
     
     if coord not in visited:
+        iteration += 1
         cell   = pizza.get_cell_by_id(coord[0], coord[1])
         shapes = list(cell.shapes)
+        
+        max_x = pizza.height - 1
+        max_y = pizza.width - 1
+#        max_x = 0
+#        max_y = 0
+#        for each in visited:
+#            x = each[0]
+#            y = each[1]
+#            max_x = max(x, max_x)
+#            max_y = max(y, max_y)
+        
+        shape_found = False
         for shape in shapes:
+            
             proceed = True
-            for points in shape.coordinates:
-                if points in visited:
-                    proceed = False
-                    break
+            
+            if shape.ID in restricted:
+                proceed = False
+            
+            # Check if the cells of the shape is available
             if proceed:
                 for points in shape.coordinates:
+                    if points in visited:
+                        proceed = False
+                        break
+            
+            # Check if an island has formed
+            if proceed and coord != (0, 0):
+#                starttime = dt.datetime.now()
+                
+                pre_total = len(visited)
+                islands   = find_islands(visited, shape, max_x, max_y)
+                
+#                msg       = "Coord: {} ShapeID: {}\t{}".format(coord, shape.ID, dt.datetime.now() - starttime)
+#                pizza.printProgressBar(total - len(queue), total, length = 50, suffix = msg)
+                
+                if pre_total != len(visited):
+                    print("Visited Changed!")
+                    proceed = False
+                    break
+                if islands:
+                    filename = '{} - ({}, {}) shapeID:{} Action: {}'.format(iteration, coord[0], coord[1], shape.ID, 'Found Island')
+                    save_map(pizza, visited, shape, filename)
+                    proceed = False
+                    break
+            
+            if proceed:
+                filename = '{} - ({}, {}) shapeID:{} Action: {}'.format(iteration, coord[0], coord[1], shape.ID, 'Added Shape')
+                save_map(pizza, visited, shape, filename)                
+                shape_found = True
+                for points in shape.coordinates:
                     visited[points] = shape
-                list_of_shapes[shape.ID] = shape
+                restricted = {}
                 break
-        if not proceed:
-            islands.append(coord)
-    pizza.printProgressBar(total - len(queue), total)
 
-print("Covered area: {} / {}".format(len(visited), total))
+            msg  = "Coord: {} ShapeID: {}\t{}".format(coord, shape.ID, dt.datetime.now() - starttime)
+            pizza.printProgressBar(total - len(queue), total, length = 50, suffix = msg)
+            
+        if shape_found == False:
+            
+            # Find neighboring cells
+            cell              = pizza.get_cell_by_id(coord[0], coord[1])
+            neighboring_cells = [each for each in cell.neighboring_cells if each.coordinates in visited]
+            
+            # Which one has a shape in visited
+            shape = None
+            
+            neighboring_cells = list(np.random.choice(neighboring_cells, len(neighboring_cells), replace = False))
+            
+            for each in neighboring_cells:
+                if each.coordinates in visited:
+                    # Put shape in restricted list
+                    shape = visited[each.coordinates]
+                    restricted[shape.ID] = shape
+                    # Remove shape
+                    for each in shape.cells:
+                        if each.coordinates in visited:
+                            del visited[each.coordinates]
+                        else:
+                            print("Shape not in visited!!")
+                    filename = '{} - ({}, {}) shapeID:{} Action: {}'.format(iteration, coord[0], coord[1], shape.ID, 'Removed Shape')
+                    save_map(pizza, visited, shape, filename)                               
+                    break            
+            # Restart queue
+            queue = [pizza.cells_by_index[i].coordinates for i in pizza.cells_by_index]
+
+        else:
+            coord_history.append(coord)
+            
+print(coord, len(visited))
+islands = find_islands(visited, shape, max_x, max_y)
+print(islands)
+print(len(visited))
+
+
+shape
+
+print("Covered area: {} / {} {}".format(len(visited), total, len(visited)/total))
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+world = [['X' if (x, y) in visited else '*' for y in range(pizza.width)] for x in range(pizza.height)]
+
+os.chdir(r'C:\Users\clam\Desktop\HashCode_Pizza\grid_combination')
+
+with open("results.txt", 'w+') as f:
+    for each in world:
+        msg = "".join(each)
+        f.write(msg + "\n")
+
+visited[(13, 135)]
+
+pizza.width
+
+len(visited)
+
+
+shapes = cell.shapes
+
+for shape in shapes:
+    flag = False
+    for c in shape.coordinates:
+        if c in visited:
+            flag = True
+            break
+    if flag == False:
+        print(shape)
 
 
 
