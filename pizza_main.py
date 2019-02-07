@@ -183,7 +183,6 @@ class BOARD:
             
         print("\n{}: Completed\n".format(dt.datetime.now() - mod_start))
 
-        # Link shapes to cells
         # Link shapes to neighboring shapes
         mod_start = dt.datetime.now()
         print("{}: Link shapes to neighboring shapes\n".format(mod_start))              
@@ -231,8 +230,10 @@ class BOARD:
         bar          = fill * filledLength + '-' * (length - filledLength)
         print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
         # Print New Line on Complete
-        if iteration == total: 
-            print()
+        if iteration == total:
+            print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
+        else:
+            print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
 
     def run_diagnostics(self):
         # Diagnostics
@@ -290,6 +291,77 @@ pizza.get_cell_by_id(0, 0)
 
 
 
+gc.collect()
+visited        = {}
+list_of_shapes = {}
+queue          = [pizza.cells_by_index[i].coordinates for i in pizza.cells_by_index]
+total          = len(queue)
+islands        = []
+while queue:
+    coord  = queue.pop(0)
+    
+    if coord not in visited:
+        cell   = pizza.get_cell_by_id(coord[0], coord[1])
+        shapes = list(cell.shapes)
+        for shape in shapes:
+            proceed = True
+            for points in shape.coordinates:
+                if points in visited:
+                    proceed = False
+                    break
+            if proceed:
+                for points in shape.coordinates:
+                    visited[points] = shape
+                list_of_shapes[shape.ID] = shape
+                break
+        if not proceed:
+            islands.append(coord)
+    pizza.printProgressBar(total - len(queue), total)
+
+print("Covered area: {} / {}".format(len(visited), total))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+count = {}
+for each in pizza.cells_by_index:
+    cell = pizza.cells_by_index[each]
+    if len(cell.shapes) not in count:
+        count[len(cell.shapes)] = 0
+    count[len(cell.shapes)] += 1
+
+count = {}
+for each in pizza.slice_by_index:
+    shape = pizza.slice_by_index[each]
+    count[shape.ID] = len(shape.neighboring_shapes)
 
 
 
